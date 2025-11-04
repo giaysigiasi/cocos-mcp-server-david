@@ -259,23 +259,23 @@ export class PrefabTools implements ToolExecutor {
     private async instantiatePrefab(args: any): Promise<ToolResponse> {
         return new Promise(async (resolve) => {
             try {
-                // 获取预制体资源信息
+                // Get prefab asset information
                 const assetInfo = await Editor.Message.request('asset-db', 'query-asset-info', args.prefabPath);
                 if (!assetInfo) {
-                    throw new Error('预制体未找到');
+                    throw new Error('Prefab not found');
                 }
 
-                // 使用正确的 create-node API 从预制体资源实例化
+                // Use correct create-node API to instantiate from prefab asset
                 const createNodeOptions: any = {
                     assetUuid: assetInfo.uuid
                 };
 
-                // 设置父节点
+                // Set parent node
                 if (args.parentUuid) {
                     createNodeOptions.parent = args.parentUuid;
                 }
 
-                // 设置节点名称
+                // Set node name
                 if (args.name) {
                     createNodeOptions.name = args.name;
                 } else if (assetInfo.name) {
@@ -490,7 +490,7 @@ export class PrefabTools implements ToolExecutor {
         return new Promise((resolve) => {
             Editor.Message.request('asset-db', 'query-asset-info', args.prefabPath).then((assetInfo: any) => {
                 if (!assetInfo) {
-                    throw new Error('预制体未找到');
+                    throw new Error('Prefab not found');
                 }
 
                 // 方法2: 使用 create-node 指定预制体资源
@@ -498,7 +498,7 @@ export class PrefabTools implements ToolExecutor {
                     assetUuid: assetInfo.uuid
                 };
 
-                // 设置父节点
+                // Set parent node
                 if (args.parentUuid) {
                     createNodeOptions.parent = args.parentUuid;
                 }

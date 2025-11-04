@@ -643,7 +643,7 @@ export class LoggerTools implements ToolExecutor {
     }
 
     private async logMessage(level: Level, message: string, category?: Category, data?: any): Promise<ToolResponse> {
-        const context: LogContext = category ? { category } : undefined;
+        const context: LogContext | undefined = category ? { category } : undefined;
 
         switch (level) {
             case 'info':

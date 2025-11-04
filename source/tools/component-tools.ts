@@ -84,7 +84,7 @@ export class ComponentTools implements ToolExecutor {
                         componentType: {
                             type: 'string',
                             description: 'Component type - Can be built-in components (e.g., cc.Label) or custom script components (e.g., MyScript). If unsure about component type, use get_components first to retrieve all components on the node.',
-                            // 移除enum限制，允许任意组件类型包括自定义脚本
+                            // Remove enum restriction, allow any component type including custom scripts
                         },
                         property: {
                             type: 'string',
@@ -205,7 +205,7 @@ export class ComponentTools implements ToolExecutor {
 
     private async addComponent(nodeUuid: string, componentType: string): Promise<ToolResponse> {
         return new Promise(async (resolve) => {
-            // 先查找节点上是否已存在该组件
+            // First check if the component already exists on the node
             const allComponentsInfo = await this.getComponents(nodeUuid);
             if (allComponentsInfo.success && allComponentsInfo.data?.components) {
                 const existingComponent = allComponentsInfo.data.components.find((comp: any) => comp.type === componentType);
@@ -223,14 +223,14 @@ export class ComponentTools implements ToolExecutor {
                     return;
                 }
             }
-            // 尝试直接使用 Editor API 添加组件
+            // Try to directly use Editor API to add component
             Editor.Message.request('scene', 'create-component', {
                 uuid: nodeUuid,
                 component: componentType
             }).then(async (result: any) => {
-                // 等待一段时间让Editor完成组件添加
+                // Wait a moment for Editor to complete component addition
                 await new Promise(resolve => setTimeout(resolve, 100));
-                // 重新查询节点信息验证组件是否真的添加成功
+                // Re-query node information to verify component was actually added successfully
                 try {
                     const allComponentsInfo2 = await this.getComponents(nodeUuid);
                     if (allComponentsInfo2.success && allComponentsInfo2.data?.components) {
@@ -265,7 +265,7 @@ export class ComponentTools implements ToolExecutor {
                     });
                 }
             }).catch((err: Error) => {
-                // 备用方案：使用场景脚本
+                // Fallback: use scene script
                 const options = {
                     name: 'cocos-mcp-server',
                     method: 'addComponentToNode',
@@ -282,25 +282,25 @@ export class ComponentTools implements ToolExecutor {
 
     private async removeComponent(nodeUuid: string, componentType: string): Promise<ToolResponse> {
         return new Promise(async (resolve) => {
-            // 1. 查找节点上的所有组件
+            // 1. Find all components on the node
             const allComponentsInfo = await this.getComponents(nodeUuid);
             if (!allComponentsInfo.success || !allComponentsInfo.data?.components) {
                 resolve({ success: false, error: `Failed to get components for node '${nodeUuid}': ${allComponentsInfo.error}` });
                 return;
             }
-            // 2. 只查找type字段等于componentType的组件（即cid）
+            // 2. Only find components where type field equals componentType (i.e., cid)
             const exists = allComponentsInfo.data.components.some((comp: any) => comp.type === componentType);
             if (!exists) {
-                resolve({ success: false, error: `Component cid '${componentType}' not found on node '${nodeUuid}'. 请用getComponents获取type字段（cid）作为componentType。` });
+                resolve({ success: false, error: `Component cid '${componentType}' not found on node '${nodeUuid}'. Please use getComponents to get the type field (cid) as componentType.` });
                 return;
             }
-            // 3. 官方API直接移除
+            // 3. Directly remove using official API
             try {
                 await Editor.Message.request('scene', 'remove-component', {
                     uuid: nodeUuid,
                     component: componentType
                 });
-                // 4. 再查一次确认是否移除
+                // 4. Check again to confirm removal
                 const afterRemoveInfo = await this.getComponents(nodeUuid);
                 const stillExists = afterRemoveInfo.success && afterRemoveInfo.data?.components?.some((comp: any) => comp.type === componentType);
                 if (stillExists) {
@@ -320,7 +320,7 @@ export class ComponentTools implements ToolExecutor {
 
     private async getComponents(nodeUuid: string): Promise<ToolResponse> {
         return new Promise((resolve) => {
-            // 优先尝试直接使用 Editor API 查询节点信息
+            // Prefer to directly use Editor API to query node information
             Editor.Message.request('scene', 'query-node', nodeUuid).then((nodeData: any) => {
                 if (nodeData && nodeData.__comps__) {
                     const components = nodeData.__comps__.map((comp: any) => ({
@@ -341,7 +341,7 @@ export class ComponentTools implements ToolExecutor {
                     resolve({ success: false, error: 'Node not found or no components data' });
                 }
             }).catch((err: Error) => {
-                // 备用方案：使用场景脚本
+                // Fallback: use scene script
                 const options = {
                     name: 'cocos-mcp-server',
                     method: 'getNodeInfo',
@@ -366,7 +366,7 @@ export class ComponentTools implements ToolExecutor {
 
     private async getComponentInfo(nodeUuid: string, componentType: string): Promise<ToolResponse> {
         return new Promise((resolve) => {
-            // 优先尝试直接使用 Editor API 查询节点信息
+            // Prefer to directly use Editor API to query node information
             Editor.Message.request('scene', 'query-node', nodeUuid).then((nodeData: any) => {
                 if (nodeData && nodeData.__comps__) {
                     const component = nodeData.__comps__.find((comp: any) => {
@@ -391,7 +391,7 @@ export class ComponentTools implements ToolExecutor {
                     resolve({ success: false, error: 'Node not found or no components data' });
                 }
             }).catch((err: Error) => {
-                // 备用方案：使用场景脚本
+                // Fallback: use scene script
                 const options = {
                     name: 'cocos-mcp-server',
                     method: 'getNodeInfo',
@@ -426,13 +426,13 @@ export class ComponentTools implements ToolExecutor {
     private extractComponentProperties(component: any): Record<string, any> {
         console.log(`[extractComponentProperties] Processing component:`, Object.keys(component));
         
-        // 检查组件是否有 value 属性，这通常包含实际的组件属性
+        // Check if component has value property, which usually contains actual component properties
         if (component.value && typeof component.value === 'object') {
             console.log(`[extractComponentProperties] Found component.value with properties:`, Object.keys(component.value));
-            return component.value; // 直接返回 value 对象，它包含所有组件属性
+            return component.value; // Directly return value object, which contains all component properties
         }
         
-        // 备用方案：从组件对象中直接提取属性
+        // Fallback: directly extract properties from component object
         const properties: Record<string, any> = {};
         const excludeKeys = ['__type__', 'enabled', 'node', '_id', '__scriptAsset', 'uuid', 'name', '_name', '_objFlags', '_enabled', 'type', 'readonly', 'visible', 'cid', 'editor', 'extends'];
         
@@ -506,7 +506,7 @@ export class ComponentTools implements ToolExecutor {
             try {
                 console.log(`[ComponentTools] Setting ${componentType}.${property} (type: ${propertyType}) = ${JSON.stringify(value)} on node ${nodeUuid}`);
                 
-                // Step 0: 检测是否为节点属性，如果是则重定向到对应的节点方法
+                // Step 0: Detect if it's a node property, if so redirect to corresponding node method
                 const nodeRedirectResult = await this.checkAndRedirectNodeProperties(args);
                 if (nodeRedirectResult) {
                     resolve(nodeRedirectResult);
@@ -647,7 +647,7 @@ export class ComponentTools implements ToolExecutor {
                     case 'component':
                         if (typeof value === 'string') {
                             // 组件引用需要特殊处理：通过节点UUID找到组件的__id__
-                            processedValue = value; // 先保存节点UUID，后续会转换为__id__
+                            processedValue = value; // First save node UUID, will be converted to __id__ later
                         } else {
                             throw new Error('Component reference value must be a string (node UUID containing the target component)');
                         }
@@ -714,7 +714,7 @@ export class ComponentTools implements ToolExecutor {
                 console.log(`[ComponentTools] Property analysis result: propertyInfo.type="${propertyInfo.type}", propertyType="${propertyType}"`);
                 console.log(`[ComponentTools] Will use color special handling: ${propertyType === 'color' && processedValue && typeof processedValue === 'object'}`);
                 
-                // 用于验证的实际期望值（对于组件引用需要特殊处理）
+                // Actual expected value for verification (special handling needed for component references)
                 let actualExpectedValue = processedValue;
                 
                 // Step 5: 获取原始节点数据来构建正确的路径
@@ -903,7 +903,7 @@ export class ComponentTools implements ToolExecutor {
                     // 从当前组件的属性元数据中获取期望的组件类型
                     let expectedComponentType = '';
                     
-                    // 获取当前组件的详细信息，包括属性元数据
+                    // Get current component's detailed information, including property metadata
                     const currentComponentInfo = await this.getComponentInfo(nodeUuid, componentType);
                     if (currentComponentInfo.success && currentComponentInfo.data?.properties?.[property]) {
                         const propertyMeta = currentComponentInfo.data.properties[property];
@@ -1118,7 +1118,7 @@ export class ComponentTools implements ToolExecutor {
                 uuid: nodeUuid,
                 component: scriptName  // 使用脚本名称而非UUID
             }).then(async (result: any) => {
-                // 等待一段时间让Editor完成组件添加
+                // Wait a moment for Editor to complete component addition
                 await new Promise(resolve => setTimeout(resolve, 100));
                 // 重新查询节点信息验证脚本是否真的添加成功
                 const allComponentsInfo2 = await this.getComponents(nodeUuid);
@@ -1147,7 +1147,7 @@ export class ComponentTools implements ToolExecutor {
                     });
                 }
             }).catch((err: Error) => {
-                // 备用方案：使用场景脚本
+                // Fallback: use scene script
                 const options = {
                     name: 'cocos-mcp-server',
                     method: 'attachScript',
